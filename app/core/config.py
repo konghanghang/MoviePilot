@@ -209,6 +209,8 @@ class ConfigModel(BaseModel):
     # ==================== 云盘配置 ====================
     # 115 AppId
     U115_APP_ID: str = "100196807"
+    # 115 OAuth2 Server 地址
+    U115_AUTH_SERVER: str = "https://movie-pilot.org"
     # Alipan AppId
     ALIPAN_APP_ID: str = "ac1bf04dc9fd4d9aaabb65b4a668d403"
 
@@ -337,7 +339,7 @@ class ConfigModel(BaseModel):
                           "https://github.com/thsrite/MoviePilot-Plugins,"
                           "https://github.com/honue/MoviePilot-Plugins,"
                           "https://github.com/InfinityPacer/MoviePilot-Plugins,"
-                          "https://github.com/DDS-Derek/MoviePilot-Plugins,"
+                          "https://github.com/DDSRem-Dev/MoviePilot-Plugins,"
                           "https://github.com/madrays/MoviePilot-Plugins,"
                           "https://github.com/justzerock/MoviePilot-Plugins,"
                           "https://github.com/KoWming/MoviePilot-Plugins,"
@@ -347,7 +349,12 @@ class ConfigModel(BaseModel):
                           "https://github.com/Aqr-K/MoviePilot-Plugins,"
                           "https://github.com/hotlcc/MoviePilot-Plugins-Third,"
                           "https://github.com/gxterry/MoviePilot-Plugins,"
-                          "https://github.com/DzAvril/MoviePilot-Plugins")
+                          "https://github.com/DzAvril/MoviePilot-Plugins,"
+                          "https://github.com/mrtian2016/MoviePilot-Plugins,"
+                          "https://github.com/Hqyel/MoviePilot-Plugins-Third,"
+                          "https://github.com/xijin285/MoviePilot-Plugins,"
+                          "https://github.com/Seed680/MoviePilot-Plugins,"
+                          "https://github.com/imaliang/MoviePilot-Plugins")
     # 插件安装数据共享
     PLUGIN_STATISTIC_SHARE: bool = True
     # 是否开启插件热加载
@@ -407,6 +414,8 @@ class ConfigModel(BaseModel):
     RCLONE_SNAPSHOT_CHECK_FOLDER_MODTIME: bool = True
     # 对OpenList进行快照对比时，是否检查文件夹的修改时间
     OPENLIST_SNAPSHOT_CHECK_FOLDER_MODTIME: bool = True
+    # 对阿里云盘进行快照对比时，是否检查文件夹的修改时间（默认关闭，因为阿里云盘目录时间不随子文件变更而更新）
+    ALIPAN_SNAPSHOT_CHECK_FOLDER_MODTIME: bool = False
 
     # ==================== Docker配置 ====================
     # Docker Client API地址
@@ -427,10 +436,12 @@ class ConfigModel(BaseModel):
     LLM_API_KEY: Optional[str] = None
     # LLM基础URL（用于自定义API端点）
     LLM_BASE_URL: Optional[str] = "https://api.deepseek.com"
+    # LLM最大上下文Token数量（K）
+    LLM_MAX_CONTEXT_TOKENS: int = 64
     # LLM温度参数
     LLM_TEMPERATURE: float = 0.1
     # LLM最大迭代次数
-    LLM_MAX_ITERATIONS: int = 15
+    LLM_MAX_ITERATIONS: int = 128
     # LLM工具调用超时时间（秒）
     LLM_TOOL_TIMEOUT: int = 300
     # 是否启用详细日志
@@ -445,8 +456,12 @@ class ConfigModel(BaseModel):
     AI_RECOMMEND_ENABLED: bool = False
     # AI推荐用户偏好
     AI_RECOMMEND_USER_PREFERENCE: str = ""
+    # Tavily API密钥（用于网络搜索）
+    TAVILY_API_KEY: str = "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"
+
     # AI推荐条目数量限制
     AI_RECOMMEND_MAX_ITEMS: int = 50
+
 
 
 class Settings(BaseSettings, ConfigModel, LogConfigModel):

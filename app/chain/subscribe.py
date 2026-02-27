@@ -144,7 +144,7 @@ class SubscribeChain(ChainBase):
             metainfo.year = year
         if mtype:
             metainfo.type = mtype
-        if season:
+        if season is not None:
             metainfo.type = MediaType.TV
             metainfo.begin_season = season
         # 识别媒体信息
@@ -174,7 +174,7 @@ class SubscribeChain(ChainBase):
                 # 豆瓣标题处理
                 meta = MetaInfo(mediainfo.title)
                 mediainfo.title = meta.name
-                if not season:
+                if season is None:
                     season = meta.begin_season
 
         # 使用名称识别兜底
@@ -188,7 +188,7 @@ class SubscribeChain(ChainBase):
 
         # 总集数
         if mediainfo.type == MediaType.TV:
-            if not season:
+            if season is None:
                 season = 1
             # 总集数
             if not kwargs.get('total_episode'):
@@ -292,7 +292,7 @@ class SubscribeChain(ChainBase):
             "description": mediainfo.overview
         })
         # 返回结果
-        return sid, ""
+        return sid, err_msg
 
     async def async_add(self, title: str, year: str,
                         mtype: MediaType = None,
@@ -321,7 +321,7 @@ class SubscribeChain(ChainBase):
             metainfo.year = year
         if mtype:
             metainfo.type = mtype
-        if season:
+        if season is not None:
             metainfo.type = MediaType.TV
             metainfo.begin_season = season
         # 识别媒体信息
@@ -351,7 +351,7 @@ class SubscribeChain(ChainBase):
                 # 豆瓣标题处理
                 meta = MetaInfo(mediainfo.title)
                 mediainfo.title = meta.name
-                if not season:
+                if season is None:
                     season = meta.begin_season
 
         # 使用名称识别兜底
@@ -365,7 +365,7 @@ class SubscribeChain(ChainBase):
 
         # 总集数
         if mediainfo.type == MediaType.TV:
-            if not season:
+            if season is None:
                 season = 1
             # 总集数
             if not kwargs.get('total_episode'):
@@ -469,7 +469,7 @@ class SubscribeChain(ChainBase):
             "description": mediainfo.overview
         })
         # 返回结果
-        return sid, ""
+        return sid, err_msg
 
     @staticmethod
     def exists(mediainfo: MediaInfo, meta: MetaBase = None):
@@ -530,7 +530,7 @@ class SubscribeChain(ChainBase):
                         # 生成元数据
                         meta = MetaInfo(subscribe.name)
                         meta.year = subscribe.year
-                        meta.begin_season = subscribe.season or None
+                        meta.begin_season = subscribe.season if subscribe.season is not None else None
                         try:
                             meta.type = MediaType(subscribe.type)
                         except ValueError:
@@ -1119,6 +1119,19 @@ class SubscribeChain(ChainBase):
             })
             logger.info(f'{subscribe.name} 订阅元数据更新完成')
 
+    def get_subscribe_by_source(self, source: str) -> Optional[Subscribe]:
+        """
+        从来源获取订阅
+        """
+        source_keyword = self.parse_subscribe_source_keyword(source)
+        if not source_keyword:
+            return None
+        # 只保留需要的字段动态获取订阅
+        valid_fields = {k: v for k, v in source_keyword.items()
+                        if k in ["type", "season", "tmdbid", "doubanid", "bangumiid"]}
+        # 暂时不考虑订阅历史, 若有必要再添加
+        return SubscribeOper().get_by(**valid_fields)
+
     @staticmethod
     def follow():
         """
@@ -1655,7 +1668,7 @@ class SubscribeChain(ChainBase):
         if download_his:
             for his in download_his:
                 # 查询下载文件
-                files = downloadhis.get_files_by_hash(his.download_hash)
+                files = downloadhis.get_files_by_hash(his.download_hash, state=1)
                 if files:
                     for file in files:
                         # 识别文件名
@@ -1828,8 +1841,9 @@ class SubscribeChain(ChainBase):
     def get_subscribe_source_keyword(subscribe: Subscribe) -> str:
         """
         构造用于订阅来源的关键字字符串
+
         :param subscribe: Subscribe 对象
-        :return: 格式化的订阅来源关键字字符串，格式为 "Subscribe|{...}"
+        :return str: 格式化的订阅来源关键字字符串，格式为 "Subscribe|{...}"
         """
         source_keyword = {
             'id': subscribe.id,
@@ -1844,3 +1858,24 @@ class SubscribeChain(ChainBase):
             'bangumiid': subscribe.bangumiid
         }
         return f"Subscribe|{json.dumps(source_keyword, ensure_ascii=False)}"
+
+    @staticmethod
+    def parse_subscribe_source_keyword(source_keyword_str: str) -> Optional[dict]:
+        """
+        解析订阅来源关键字字符串
+
+        :param source_keyword_str: 订阅来源关键字字符串，格式为 "Subscribe|{...}"
+        :return Dict: 如果解析失败则返回None
+        """
+        if not source_keyword_str or not source_keyword_str.startswith("Subscribe|"):
+            return None
+
+        try:
+            # 分割字符串获取JSON部分
+            json_part = source_keyword_str.split("|", 1)[1]
+            # 解析JSON字符串
+            source_keyword = json.loads(json_part)
+            return source_keyword
+        except (IndexError, json.JSONDecodeError, TypeError) as e:
+            logger.error(f"解析订阅来源关键字失败: {e}")
+            return None

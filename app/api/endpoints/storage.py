@@ -1,4 +1,4 @@
-from datetime import datetime
+import math
 from pathlib import Path
 from typing import Any, List, Optional
 
@@ -28,6 +28,17 @@ def qrcode(name: str, _: schemas.TokenPayload = Depends(verify_token)) -> Any:
     qrcode_data, errmsg = StorageChain().generate_qrcode(name)
     if qrcode_data:
         return schemas.Response(success=True, data=qrcode_data, message=errmsg)
+    return schemas.Response(success=False, message=errmsg)
+
+
+@router.get("/auth_url/{name}", summary="获取 OAuth2 授权 URL", response_model=schemas.Response)
+def auth_url(name: str, _: schemas.TokenPayload = Depends(verify_token)) -> Any:
+    """
+    获取 OAuth2 授权 URL
+    """
+    auth_data, errmsg = StorageChain().generate_auth_url(name)
+    if auth_data:
+        return schemas.Response(success=True, data=auth_data)
     return schemas.Response(success=False, message=errmsg)
 
 
@@ -83,7 +94,7 @@ def list_files(fileitem: schemas.FileItem,
         if sort == "name":
             file_list.sort(key=lambda x: StringUtils.natural_sort_key(x.name or ""))
         else:
-            file_list.sort(key=lambda x: x.modify_time or datetime.min, reverse=True)
+            file_list.sort(key=lambda x: x.modify_time or -math.inf, reverse=True)
     return file_list
 
 

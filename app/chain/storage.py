@@ -31,6 +31,12 @@ class StorageChain(ChainBase):
         """
         return self.run_module("generate_qrcode", storage=storage)
 
+    def generate_auth_url(self, storage: str) -> Optional[Tuple[dict, str]]:
+        """
+        生成 OAuth2 授权 URL
+        """
+        return self.run_module("generate_auth_url", storage=storage)
+
     def check_login(self, storage: str, **kwargs) -> Optional[Tuple[dict, str]]:
         """
         登录确认
@@ -150,7 +156,7 @@ class StorageChain(ChainBase):
         """
         判断是否包含蓝光必备的文件夹
         """
-        required_files = ("BDMV", "CERTIFICATE")
+        required_files = {"BDMV", "CERTIFICATE"}
         return any(
             item.type == "dir" and item.name in required_files
             for item in fileitems or []
@@ -160,7 +166,7 @@ class StorageChain(ChainBase):
         """
         删除媒体文件，以及不含媒体文件的目录
         """
-        media_exts = settings.RMT_MEDIAEXT + settings.DOWNLOAD_TMPEXT
+        media_exts = settings.RMT_MEDIAEXT + settings.DOWNLOAD_TMPEXT + settings.RMT_SUBEXT + settings.RMT_AUDIOEXT
         fileitem_path = Path(fileitem.path) if fileitem.path else Path("")
         if len(fileitem_path.parts) <= 2:
             logger.warn(f"【{fileitem.storage}】{fileitem.path} 根目录或一级目录不允许删除")

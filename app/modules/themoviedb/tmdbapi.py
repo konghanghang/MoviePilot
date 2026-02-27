@@ -167,7 +167,7 @@ class TmdbApi:
         """
         记录匹配调试日志
         """
-        if season_number and season_year:
+        if season_number is not None and season_year:
             logger.debug(f"正在识别{mtype.value}：{name}, 季集={season_number}, 季集年份={season_year} ...")
         else:
             logger.debug(f"正在识别{mtype.value}：{name}, 年份={year} ...")
@@ -473,7 +473,7 @@ class TmdbApi:
             info = self._set_media_type(info, MediaType.MOVIE)
         else:
             # 有当前季和当前季集年份，使用精确匹配
-            if season_year and season_number:
+            if season_year and season_number is not None:
                 self._log_match_debug(mtype, name, season_year, season_number, season_year)
                 info = self.__search_tv_by_season(name,
                                                   season_year,
@@ -697,7 +697,7 @@ class TmdbApi:
             return {}
         ret_seasons = {}
         for season_info in tv_info.get("seasons") or []:
-            if not season_info.get("season_number"):
+            if season_info.get("season_number") is None:
                 continue
             ret_seasons[season_info.get("season_number")] = season_info
         return ret_seasons
@@ -1625,6 +1625,9 @@ class TmdbApi:
         """
         清除缓存
         """
+        self.match_web.cache_clear()
+        self.discover.discover_movies.cache_clear()
+        self.discover.discover_tv_shows.cache_clear()
         self.tmdb.cache_clear()
 
     # 私有异步方法
@@ -2028,7 +2031,7 @@ class TmdbApi:
             info = self._set_media_type(info, MediaType.MOVIE)
         else:
             # 有当前季和当前季集年份，使用精确匹配
-            if season_year and season_number:
+            if season_year and season_number is not None:
                 self._log_match_debug(mtype, name, season_year, season_number, season_year)
                 info = await self.__async_search_tv_by_season(name,
                                                               season_year,

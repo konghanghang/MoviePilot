@@ -11,7 +11,10 @@ from app.core.context import Context
 from app.core.event import eventmanager
 from app.core.metainfo import MetaInfo, MetaInfoPath
 from app.core.security import verify_token, verify_apitoken
+from app.db.models import User
+from app.db.user_oper import get_current_active_user, get_current_active_superuser
 from app.schemas import MediaType, MediaRecognizeConvertEventData
+from app.schemas.category import CategoryConfig
 from app.schemas.types import ChainEventType
 
 router = APIRouter()
@@ -131,6 +134,26 @@ def scrape(fileitem: schemas.FileItem,
     return schemas.Response(success=True, message=f"{fileitem.path} 刮削完成")
 
 
+@router.get("/category/config", summary="获取分类策略配置", response_model=schemas.Response)
+def get_category_config(_: User = Depends(get_current_active_user)):
+    """
+    获取分类策略配置
+    """
+    config = MediaChain().category_config()
+    return schemas.Response(success=True, data=config.model_dump())
+
+
+@router.post("/category/config", summary="保存分类策略配置", response_model=schemas.Response)
+def save_category_config(config: CategoryConfig, _: User = Depends(get_current_active_superuser)):
+    """
+    保存分类策略配置
+    """
+    if MediaChain().save_category_config(config):
+        return schemas.Response(success=True, message="保存成功")
+    else:
+        return schemas.Response(success=False, message="保存失败")
+
+
 @router.get("/category", summary="查询自动分类配置", response_model=dict)
 async def category(_: schemas.TokenPayload = Depends(verify_token)) -> Any:
     """
@@ -172,7 +195,7 @@ async def seasons(mediaid: Optional[str] = None,
             tmdbid = int(mediaid[5:])
             seasons_info = await TmdbChain().async_tmdb_seasons(tmdbid=tmdbid)
             if seasons_info:
-                if season:
+                if season is not None:
                     return [sea for sea in seasons_info if sea.season_number == season]
                 return seasons_info
     if title:
@@ -184,11 +207,11 @@ async def seasons(mediaid: Optional[str] = None,
             if settings.RECOGNIZE_SOURCE == "themoviedb":
                 seasons_info = await TmdbChain().async_tmdb_seasons(tmdbid=mediainfo.tmdb_id)
                 if seasons_info:
-                    if season:
+                    if season is not None:
                         return [sea for sea in seasons_info if sea.season_number == season]
                     return seasons_info
             else:
-                sea = season or 1
+                sea = season if season is not None else 1
                 return [schemas.MediaSeason(
                     season_number=sea,
                     poster_path=mediainfo.poster_path,
